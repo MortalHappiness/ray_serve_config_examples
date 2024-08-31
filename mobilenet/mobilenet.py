@@ -1,5 +1,7 @@
 import tempfile
 import numpy as np
+from starlette.requests import Request
+from starlette.response import JSONResponse
 
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.mobilenet_v2 import (
@@ -19,9 +21,13 @@ class ImageClassifier:
     # Users can send HTTP requests with an image. The classifier will return
     # the top prediction.
     # Sample output: {"prediction":["n02099601","golden_retriever",0.17944198846817017]}
-    
-    async def __call__(self, http_request):
+
+    async def __call__(self, http_request: Request):
         request = await http_request.form()
+        if http_request.method != "POST":
+            return JSONResponse({"error": "Not found"}, status_code=404)
+        if "image" not in request:
+            return JSONResponse({"error": "Image not found"}, status_code=400)
         image_file = await request["image"].read()
 
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
